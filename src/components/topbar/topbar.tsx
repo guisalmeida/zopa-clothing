@@ -18,7 +18,7 @@ const Topbar = () => {
 
   const handleShowCart = () => {
     //@ts-ignore
-    setIsShowCart((prevState) => !prevState);
+    setIsShowCart(!isShowCart);
   };
 
   return (
@@ -40,7 +40,9 @@ const Topbar = () => {
           <div className="topbar__icons">
             {currentUser ? (
               <span onClick={signOutUser} className="topbar__link">
-                Sign Out
+                {
+                  //@ts-ignore
+                `Olá ${currentUser.displayName}, sair`}
               </span>
             ) : (
               <Link to="/auth" className="topbar__link">

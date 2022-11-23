@@ -41,6 +41,12 @@ export const TopbarContainer = styled.header`
         .topbar__cart {
             position: relative;
         }
+
+        .topbar__link {
+            text-decoration: none;
+            color: black;
+            cursor: pointer;
+        }
     }
 
     .topbar__links {

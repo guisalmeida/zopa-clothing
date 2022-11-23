@@ -5,10 +5,10 @@ import { SliderContainer } from "./styled";
 
 //@ts-ignore
 const Slider = ({ show, title, children }) => {
-  const { setIsShowCart } = useContext(CartContext);
+  const { isShowCart, setIsShowCart } = useContext(CartContext);
   const handleShowCart = () => {
     //@ts-ignore
-    setIsShowCart((prevState) => !prevState);
+    setIsShowCart(!isShowCart);
   };
 
   return (

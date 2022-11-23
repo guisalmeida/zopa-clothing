@@ -1,10 +1,12 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useReducer } from "react";
 import { priceToNumber } from "../utils/currency";
+import { createAction } from "../utils/reducer/reducer";
 
 //@ts-ignore
 const incrementItem = (cartItem) => {
   return { ...cartItem, quantity: (cartItem.quantity += 1) };
 };
+
 //@ts-ignore
 const decrementItem = (cartItems, item) => {
   const existingCartItem = cartItems.find(
@@ -21,6 +23,7 @@ const decrementItem = (cartItems, item) => {
   }
   return;
 };
+
 //@ts-ignore
 const addCartItem = (cartItems, productToAdd) => {
   const existingCartItem = cartItems.find(
@@ -45,6 +48,7 @@ const removeCartItem = (cartItems, cartItemToRemove) => {
     (cartItem) => cartItem.selectedSize === cartItemToRemove.selectedSize
   );
   if (!existingCartItem) return;
+
   //@ts-ignore
   return cartItems.filter((cartItem) => {
     return cartItem.selectedSize !== cartItemToRemove.selectedSize;
@@ -55,47 +59,75 @@ export const CartContext = createContext({
   isShowCart: false,
   setIsShowCart: () => {},
   cartItems: [],
-  setCartItems: () => {},
   cartItemsCount: 0,
-  setCartItemsCount: () => {},
+  cartItemsTotal: 0,
   addItemToCart: () => {},
   removeItemFromCart: () => {},
   decrementItemFromCart: () => {},
-  setCartItemsTotal: () => {},
-  cartItemsTotal: 0,
 });
+
+const CART_ACTIONS_TYPES = {
+  SET_CART_ITENS: 'SET_CART_ITENS',
+  SET_MINICART_OPEN: 'SET_MINICART_OPEN'
+}
+
+const INITIAL_STATE = {
+  isShowCart: false,
+  cartItems: [],
+  cartItemsCount: 0,
+  cartItemsTotal: 0,
+}
+
+const cartReducer = (state: any, action: { type: any; payload: any; }) => {
+  const {type, payload} = action
+
+  switch (type) {
+    case CART_ACTIONS_TYPES.SET_CART_ITENS:
+      return {
+        ...state,
+        ...payload
+      }
+
+    case CART_ACTIONS_TYPES.SET_MINICART_OPEN:
+      return {
+        ...state,
+        isShowCart: payload
+      }
+
+    default:
+      throw new Error(`unhandled type of ${type} in cartReducer!`);
+  }
+}
 
 // @ts-ignore
 export const CartProvider = ({ children }) => {
-  const [isShowCart, setIsShowCart] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
-  const [cartItemsCount, setCartItemsCount] = useState(0);
-  const [cartItemsTotal, setCartItemsTotal] = useState(0);
+  const [{cartItems, isShowCart, cartItemsCount, cartItemsTotal}, 
+    dispatch] = useReducer(cartReducer, INITIAL_STATE)
 
-  useEffect(() => {
-    const newCartCount = cartItems.reduce(
-      // @ts-ignore
-      (total, cartItem) => (total += cartItem.quantity),
-      0
+  const updateCartItensReducer = (newCartItens: any) => {
+    const newCartItemsCount = cartItems.reduce((total: any, cartItem: { quantity: any; }) => 
+      (total += cartItem.quantity), 0
     );
-    setCartItemsCount(newCartCount);
-  }, [cartItems]);
 
-  useEffect(() => {
-    //@ts-ignore
-    const totalAmountCart = cartItems.reduce((total, cartItem) => {
-      //@ts-ignore
+    const newCartItensTotal = cartItems.reduce((total: number, cartItem: { actual_price: string; quantity: number; }) => {
       const priceNumber = priceToNumber(cartItem.actual_price);
-      //@ts-ignore
       const actualPrice = priceNumber * cartItem.quantity;
       return (total += actualPrice);
     }, 0);
-    setCartItemsTotal(totalAmountCart);
-  }, [cartItems]);
+
+    dispatch(createAction(CART_ACTIONS_TYPES.SET_CART_ITENS, {
+        cartItems: newCartItens,
+        cartItemsTotal: newCartItensTotal,
+        cartItemsCount: newCartItemsCount
+      })
+    )
+  }
 
   // @ts-ignore
   const addItemToCart = (productToAdd) => {
-    setCartItems(addCartItem(cartItems, productToAdd));
+    const newCartItens = addCartItem(cartItems, productToAdd);
+    updateCartItensReducer(newCartItens)
+
     if (window.location.pathname !== "/checkout") {
       setIsShowCart(true);
     }
@@ -103,27 +135,30 @@ export const CartProvider = ({ children }) => {
 
   // @ts-ignore
   const removeItemFromCart = (cartItemToRemove) => {
-    setCartItems(removeCartItem(cartItems, cartItemToRemove));
+    const newCartItens = removeCartItem(cartItems, cartItemToRemove);
+    updateCartItensReducer(newCartItens)
   };
 
   // @ts-ignore
   const decrementItemFromCart = (item) => {
     // @ts-ignore
-    setCartItems(decrementItem(cartItems, item));
+    const newCartItens = decrementItem(cartItems, item);
+    updateCartItensReducer(newCartItens)
   };
+
+  const setIsShowCart = (bool: Boolean) => {
+    dispatch(createAction(CART_ACTIONS_TYPES.SET_MINICART_OPEN, bool))
+  }
 
   const value = {
     isShowCart,
     setIsShowCart,
     cartItems,
-    setCartItems,
     cartItemsCount,
-    setCartItemsCount,
+    cartItemsTotal,
     addItemToCart,
     removeItemFromCart,
-    decrementItemFromCart,
-    cartItemsTotal,
-    setCartItemsTotal,
+    decrementItemFromCart
   };
 
   return (
